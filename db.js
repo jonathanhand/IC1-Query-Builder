@@ -4,6 +4,8 @@ let dbReq = indexedDB.open('myDatabase', 1);
 dbReq.onupgradeneeded = function(event) {
   db = event.target.result;
   var objectStore;
+
+  //define initial table values
   var cofdaily = {id: 1, name: 'cofdaily', fields: [{1: 'reg'}, {2: 'shipton'}], links: [{2:2}]};
   var cmf = {id: 2, name: 'cmf', fields: [{2: 'cmfacctn'}, {3: 'mktgacctn'}], links: [{1:2}]};
   var mktg = {id: 3, name: 'mktg', fields: [{3: 'mktgacctn'}, {4:'sourcedate'}], links: [{2:3}]};
@@ -11,6 +13,13 @@ dbReq.onupgradeneeded = function(event) {
 
   if (!db.objectStoreNames.contains('tables')) {
   objectStore = db.createObjectStore('tables',  {keyPath: 'id'});
+  
+  //define index
+  objectStore.createIndex('name', 'name', { unique: true});//, multiEntry: true 
+
+  //doesn't look like indexing array is possible right now in indexeddb
+  //objectStore.createIndex('fields', 'fields', { unique: false});
+
   for(var key in tableObjects) {
     objectStore.put(tableObjects[key]);
     }
@@ -41,8 +50,10 @@ dbReq.onsuccess = function(event) {
   addTable(db, tableObjects[key]);
   }
   */
-  readTable(db);
-  readAll(db);
+  //readTable(db);
+  //readAll(db);
+  readFields();
+  //readAllFields(db);
 }
 
 dbReq.onerror = function(event) {
@@ -92,7 +103,23 @@ function readAll(db) {
        console.log('Id: ' + cursor.key);
        console.log('Name: ' + cursor.value.name);
        console.log('fields: ' + cursor.value.fields);
-       console.log('Links: ' + cursor.value.links);
+       for(var key in cursor.value.fields) {
+       console.log('Links: ' + JSON.stringify(cursor.value.fields[key]));
+       }
+       cursor.continue();
+    } else {
+      console.log('No more data');
+    }
+  };
+}
+function readAllFields(db) {
+  var objectStore = db.transaction('tables').objectStore('tables');
+   objectStore.openCursor().onsuccess = function (event) {
+     var cursor = event.target.result;
+     if (cursor) {
+       for(var key in cursor.value.fields) {
+       console.log(JSON.stringify(cursor.value.fields[key]));
+       }
        cursor.continue();
     } else {
       console.log('No more data');
@@ -100,46 +127,45 @@ function readAll(db) {
   };
 }
 
-//look at 3.8 index on tutorialdocs link
-/*
-function addPart (db, pn, cp, lp) {
-    let tx = db.transaction(['parts'], 'readwrite');
-    let store = tx.objectStore('parts');
+//using indexes (name) to read all (faster?)
+function readFields () {
+  var transaction = db.transaction(['tables'], 'readonly');
+  var store = transaction.objectStore('tables');
+  var index = store.index('name');
+  //var request = index.get('cofdaily');
+  var htmlOut = "";
+  var htmlDiv = document.getElementById("tables");
+  var getAllRequest = index.getAll();
 
-    //put part into object store
-    let part = {partNumber: pn, currentPrice:cp, lastPrice:lp};
-    store.add(part)
+  getAllRequest.onsuccess = function() {
 
-    //Wait for database transaction to complete
-    tx.oncomplete = function() { console.log('stored part!') }
-    tx.onerror = function(event) {
-        alert('error storing part ' + event.target.errorCode);
+    //loop through all the tables
+    for(var i = 0; i < getAllRequest.result.length; i++) {
+      //print the table name
+      htmlOut += '</br></br>' + getAllRequest.result[i].name + '</br>';
+      console.log("Table: " + getAllRequest.result[i].name)
+      //loop through each fields array in table
+      for(var j = 0; j < getAllRequest.result[i].fields.length; j++) { 
+        //loop through each field in the array
+        for(var key in getAllRequest.result[i].fields[j]) {
+          //print the individual field
+          htmlOut += getAllRequest.result[i].fields[j][key] + '</br>';
+          console.log(getAllRequest.result[i].fields[j][key]);
+        }
+      }
     }
-}
-*/
-/*
-var schema = {
-  cofdaily : {
-    fields: [id, reg, shipton, billton, partno, qty],
-    relationships: {
-      cmf: {objectStore: 'cmf'}
-    }
-  },
-  cmf: {
-    fields: [id, cmfacctn, branch, mktgacct],
-    relationships: {
-      cofdaily: {objectStore: 'cofdaily' }
+    htmlDiv.innerHTML = htmlOut;
+  }
+
+  /*
+  request.onsuccess = function (e) {
+    var result = e.target.result;
+    if (result) {
+      console.log(result)
+    } else {
+      console.log("no fields")
     }
   }
-};
-
-var cof = {
-  id:'CF1',
-  cmf:['CM1']
-};
-
-var cmf = {
-  id:'CM1',
-  cof:['CF1']
+  */
 }
-*/
+
