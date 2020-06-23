@@ -1,3 +1,31 @@
+
+var data = JSON.parse(data)
+console.log(data)
+
+
+function importIDB(dname, sname, arr) {
+  return new Promise(function(resolve) {
+    var r = window.indexedDB.open(dname)
+    r.onupgradeneeded = function() {
+      var idb = r.result
+      var store = idb.createObjectStore(sname, {keyPath: "name"})
+    }
+    r.onsuccess = function() {
+      var idb = r.result
+        let tactn = idb.transaction(sname, "readwrite")
+    	  var store = tactn.objectStore(sname)
+        for(var obj of arr) {
+          store.put(obj)
+        }
+        resolve(idb)
+    }
+    r.onerror = function (e) {
+     alert("Enable to access IndexedDB, " + e.target.errorCode)
+    }    
+  })
+}
+
+loadJSON("tables.json")
 let db;
 let dbReq = indexedDB.open('myDatabase', 1);
 
@@ -9,8 +37,34 @@ dbReq.onupgradeneeded = function(event) {
   var cofdaily = {id: 1, name: 'cofdaily', fields: [{1: 'reg'}, {2: 'shipton'}], links: [{2:2}]};
   var cmf = {id: 2, name: 'cmf', fields: [{2: 'cmfacctn'}, {3: 'mktgacctn'}], links: [{1:2}]};
   var mktg = {id: 3, name: 'mktg', fields: [{3: 'mktgacctn'}, {4:'sourcedate'}], links: [{2:3}]};
-  var tableObjects = [cofdaily, cmf, mktg];
+  //var tableObjects = [cofdaily, cmf, mktg];
+  
+  var cofJ = [
+    {
+      name: "cof",
+      fieldNum: 1,
+      fieldName: 'reg'
+    },
+    {
+      name: "cof",
+      fieldNum: 2,
+      fieldName: 'shipton'
+    }
+  ];
+  var cmfJ = [
+    {
+      name: "cmf",
+      fieldNum: 2,
+      fieldName: 'cmfacctn'
+    },
+    {
+      name: "cmf",
+      fieldNum: 3,
+      fieldName: 'mktgacctn'
+    }
+  ]
 
+  var tableObjects = [cofJ, cmfJ];
   if (!db.objectStoreNames.contains('tables')) {
   objectStore = db.createObjectStore('tables',  {keyPath: 'id'});
   
@@ -21,11 +75,11 @@ dbReq.onupgradeneeded = function(event) {
   //objectStore.createIndex('fields', 'fields', { unique: false});
 
   for(var key in tableObjects) {
-    objectStore.put(tableObjects[key]);
+    //objectStore.put(tableObjects[key]);
     }
   //adds initial data (only once)
-  objectStore.put(cofdaily)
-  objectStore.put(cmf)
+  //objectStore.put(cofJ)
+  //objectStore.put(cmf)
   }
 }
 
@@ -52,7 +106,7 @@ dbReq.onsuccess = function(event) {
   */
   //readTable(db);
   //readAll(db);
-  readFields();
+  //readFields();
   //readAllFields(db);
 }
 
