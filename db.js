@@ -53,14 +53,38 @@ dbReq.onsuccess = function(event) {
   });
   table2.addEventListener("change", function () {
     getTableFields(db1,table2.value, "table2ul");
+    getTableLinks(db1, table1.value, table2.value)
   });
-  fillDropdowns(db1);
+  fillDropdowns(db1,table1.value,table2.value);
   //getTableFields(db1);
   getField();
 }
 
 dbReq.onerror = function(event) {
   alert('error opening database ' + event.target.errorCode);
+}
+//TODO stopped on joing matching indexes
+
+function getTableLinks(db1, table1, table2) {
+  console.log(table1);
+  console.log(table2);
+  let transaction = db1.transaction("fields");
+  let fields = transaction.objectStore("fields");
+  //field name
+  //let fieldIndex = fields.index("fieldName_idx") ;
+  let tableIndex = fields.index("tableName_idx");
+  //range of indexes
+  var request = tableIndex.openCursor(IDBKeyRange.only(tn));
+  request.onsuccess = function (event) {
+
+    var cursor = event.target.result;
+      if(cursor) {
+        //console.log(cursor.value.fieldName)
+        cursor.continue();
+    } else {
+      //console.log('Entries all displayed.');
+    }
+  }
 }
 
 function fillDropdowns(db1){
@@ -87,7 +111,7 @@ function fillDropdowns(db1){
         table2.appendChild(opt2)
         cursor.continue();
     } else {
-      console.log('Entries all displayed.');
+      //console.log('Entries all displayed.');
     }
   }
 
@@ -107,11 +131,11 @@ function getTableFields(db1, tn, target) {
     ul.innerHTML = "";
     var cursor = event.target.result;
       if(cursor) {
-        console.log(cursor.value.fieldName)
+        //console.log(cursor.value.fieldName)
         fieldArray.push(cursor.value.fieldName)
         cursor.continue();
     } else {
-      console.log('Entries all displayed.');
+      //console.log('Entries all displayed.');
     }
     for(let i = 0; i < fieldArray.length; i++) {
       var list = document.createElement("li");
