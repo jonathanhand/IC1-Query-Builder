@@ -44,23 +44,107 @@ dbReq.onupgradeneeded = function(event) {
 }
 
 dbReq.onsuccess = function(event) {
+  var db1 = dbReq.result;
+  const table1 = document.getElementById("table1");
+  const table2 = document.getElementById("table2");
+  table1.addEventListener("change", function () {
+    getTableFields(db1,table1.value);
+    console.log(table1.value)
+  });
+  table2.addEventListener("change", function () {
+    console.log(table2.value)
+  });
+  fillDropdowns(db1);
+  //getTableFields(db1);
   getField();
 }
 
 dbReq.onerror = function(event) {
   alert('error opening database ' + event.target.errorCode);
 }
+
+function fillDropdowns(db1){
+  const table1 = document.getElementById("table1");
+  const table2 = document.getElementById("table2");
+  table1.addEventListener("change", function () {
+    getTableFields(db1,table1.value);
+    console.log(table1.value)
+  });
+  table2.addEventListener("change", function () {
+    console.log(table2.value)
+  });
+  let transaction = db1.transaction("fields");
+  let fields = transaction.objectStore("fields");
+  let tableNameIndex = fields.index("tableName_idx") ;
+
+  var request = tableNameIndex.openCursor(IDBKeyRange.lowerBound(0), "nextunique");
+  
+  request.onsuccess = function (event) {
+    var cursor = event.target.result;
+      if(cursor) {
+        //unique table names
+        var opt1 = document.createElement("option");
+        var opt2 = document.createElement("option");
+        opt1.value = cursor.value.tableName
+        opt1.innerHTML = cursor.value.tableName
+        opt2.value = cursor.value.tableName
+        opt2.innerHTML = cursor.value.tableName
+
+        table1.appendChild(opt1)
+        table2.appendChild(opt2)
+        cursor.continue();
+    } else {
+      console.log('Entries all displayed.');
+    }
+  }
+
+}
+function getTableFields(db1, tn) {
+//TODO get the range working on curso so can create list of fields below drop down menus
+  let transaction = db1.transaction("fields");
+  let fields = transaction.objectStore("fields");
+  //field name
+  //let fieldIndex = fields.index("fieldName_idx") ;
+  let tableIndex = fields.index("tableName_idx");
+  //range of indexes
+  var request = fields.openCursor(IDBKeyRange.only(tn));
+
+  request.onsuccess = function (event) {
+    var cursor = event.target.result;
+      if(cursor) {
+        console.log(cursor.value)
+        cursor.continue();
+    } else {
+      console.log('Entries all displayed.');
+    }
+  }
+
+}
 function getField () {
   db = event.target.result;
   let transaction = db.transaction("fields");
   let fields = transaction.objectStore("fields");
-  let fieldIndex = fields.index("fieldName_idx") ;
+  //field name
+  //let fieldIndex = fields.index("fieldName_idx") ;
+  let fieldIndex = fields.index("fieldNum_idx") ;
+  //range of indexes
+  let request = fieldIndex.getAll(IDBKeyRange.lowerBound(3));
 
-  let request = fieldIndex.getAll('mktgacct');
+  var keyRangeValue = IDBKeyRange.bound(1, 3);
+
+  fields.openCursor(keyRangeValue).onsuccess = function (event) {
+    var cursor = event.target.result;
+      if(cursor) {
+        //console.log(cursor.value)
+        cursor.continue();
+    } else {
+      //console.log('Entries all displayed.');
+    }
+  }
 
   request.onsuccess = function() {
     if (request.result !== undefined) {
-      console.log("fields", request.result); // array of books with price=10
+      //console.log("fields", request.result); // array of books with price=10
     } else {
       console.log("No such fields");
     }
