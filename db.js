@@ -48,11 +48,11 @@ dbReq.onsuccess = function(event) {
   const table1 = document.getElementById("table1");
   const table2 = document.getElementById("table2");
   table1.addEventListener("change", function () {
-    getTableFields(db1,table1.value);
-    console.log(table1.value)
+    getTableFields(db1,table1.value, "table1ul");
+    table2.disabled = false;
   });
   table2.addEventListener("change", function () {
-    console.log(table2.value)
+    getTableFields(db1,table2.value, "table2ul");
   });
   fillDropdowns(db1);
   //getTableFields(db1);
@@ -66,13 +66,6 @@ dbReq.onerror = function(event) {
 function fillDropdowns(db1){
   const table1 = document.getElementById("table1");
   const table2 = document.getElementById("table2");
-  table1.addEventListener("change", function () {
-    getTableFields(db1,table1.value);
-    console.log(table1.value)
-  });
-  table2.addEventListener("change", function () {
-    console.log(table2.value)
-  });
   let transaction = db1.transaction("fields");
   let fields = transaction.objectStore("fields");
   let tableNameIndex = fields.index("tableName_idx") ;
@@ -99,23 +92,31 @@ function fillDropdowns(db1){
   }
 
 }
-function getTableFields(db1, tn) {
-//TODO get the range working on curso so can create list of fields below drop down menus
+function getTableFields(db1, tn, target) {
+  var fieldArray = new Array()
   let transaction = db1.transaction("fields");
   let fields = transaction.objectStore("fields");
   //field name
   //let fieldIndex = fields.index("fieldName_idx") ;
   let tableIndex = fields.index("tableName_idx");
   //range of indexes
-  var request = fields.openCursor(IDBKeyRange.only(tn));
+  var request = tableIndex.openCursor(IDBKeyRange.only(tn));
 
   request.onsuccess = function (event) {
+    var ul = document.getElementById(target);
+    ul.innerHTML = "";
     var cursor = event.target.result;
       if(cursor) {
-        console.log(cursor.value)
+        console.log(cursor.value.fieldName)
+        fieldArray.push(cursor.value.fieldName)
         cursor.continue();
     } else {
       console.log('Entries all displayed.');
+    }
+    for(let i = 0; i < fieldArray.length; i++) {
+      var list = document.createElement("li");
+      list.innerHTML = fieldArray[i];
+      ul.appendChild(list);
     }
   }
 
